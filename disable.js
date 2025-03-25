@@ -1,6 +1,7 @@
 /**
- * Disable Page Visibility API
+ * Disable Page Visibility API and Prevent Focus Loss
  * Copyright (C) 2021 Marvin Schopf
+ * Modified by Thomas Hoang in 2025
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,26 +17,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-window.addEventListener(
-	"visibilitychange",
-	function (event) {
-		event.stopImmediatePropagation();
-	},
-	true
-);
+function preventEvent(event) {
+  event.stopImmediatePropagation();
+}
 
-window.addEventListener(
-	"webkitvisibilitychange",
-	function (event) {
-		event.stopImmediatePropagation();
-	},
-	true
-);
+// List of events to block
+const eventsToBlock = [
+  "visibilitychange",
+  "webkitvisibilitychange",
+  "blur",
+  "focus"
+];
 
-window.addEventListener(
-	"blur",
-	function (event) {
-		event.stopImmediatePropagation();
-	},
-	true
-);
+// Add event listeners for each event
+eventsToBlock.forEach(eventType => {
+  window.addEventListener(eventType, preventEvent, true);
+});
