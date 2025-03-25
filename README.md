@@ -32,6 +32,7 @@ The extension injects a content script (`disable.js`) into all web pages you vis
 - `visibilitychange`
 - `webkitvisibilitychange`
 - `blur`
+- `focus`
 
 By blocking these events using `event.stopImmediatePropagation()`, the extension prevents websites from detecting when you switch tabs or minimize the browser window.
 
