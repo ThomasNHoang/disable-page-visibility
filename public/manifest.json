@@ -10,10 +10,16 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["*://*/*"],
-      "js": ["disable.js"]
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": ["tabs", "scripting", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
     }
-  ]
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
 }

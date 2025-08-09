@@ -17,19 +17,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-function preventEvent(event) {
+function preventEvent(event: Event) {
   event.stopImmediatePropagation();
 }
 
 // List of events to block
 const eventsToBlock = [
-  "visibilitychange",
-  "webkitvisibilitychange",
-  "blur",
-  "focus"
+  'visibilitychange',
+  'webkitvisibilitychange',
+  'blur',
+  'focus',
 ];
 
 // Add event listeners for each event
-eventsToBlock.forEach(eventType => {
+eventsToBlock.forEach((eventType) => {
   window.addEventListener(eventType, preventEvent, true);
 });
