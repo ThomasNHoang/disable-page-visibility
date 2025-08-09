@@ -81,7 +81,13 @@ async function main() {
   }
 
   const url = tab.url || tab.pendingUrl;
-  if (!url) return;
+  if (!url) {
+    console.error('No URL found for the current tab.');
+    hostnameElement.textContent = 'No page found';
+    toggleSwitch.disabled = true;
+    updatePopupUI(false, statusTextElement, false);
+    return;
+  }
 
   hostnameElement.textContent = new URL(url).hostname;
 
