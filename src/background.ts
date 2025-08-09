@@ -87,7 +87,7 @@ async function setUrlState(url: string, value: boolean): Promise<void> {
     }
   } else {
     try {
-      await chrome.storage.local.remove(hostname); // Save Storage
+      await chrome.storage.local.remove(hostname); // Remove hostname from storage to indicate enabled state (saves storage space)
     } catch (error) {
       console.error(
         `Failed to enable hostname ${hostname} in local storage:`,
