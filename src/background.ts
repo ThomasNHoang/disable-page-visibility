@@ -102,7 +102,8 @@ async function getUrlState(url: string): Promise<boolean> {
   const hostname = new URL(url).hostname;
   try {
     const data = await chrome.storage.local.get(hostname);
-    return !(hostname in data); // False if exists because default is true and doesn't exist
+    // Returns true if hostname is not in storage (default enabled state), false if hostname exists in storage (disabled state)
+    return !(hostname in data);
   } catch (error) {
     console.error(`Error getting data for hostname ${hostname}:`, error);
     throw error;
