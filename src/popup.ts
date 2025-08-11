@@ -91,7 +91,10 @@ async function main() {
 
   hostnameElement.textContent = new URL(url).hostname;
 
-  if (!url.startsWith('http')) {
+  if (
+    !url.startsWith('http') ||
+    url.startsWith('https://chromewebstore.google.com/')
+  ) {
     toggleSwitch.disabled = true;
     updatePopupUI(false, statusTextElement, false);
     return;

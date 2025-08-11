@@ -164,7 +164,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (
     changeInfo.status === 'complete' &&
     tab.url &&
-    tab.url.startsWith('http')
+    tab.url.startsWith('http') &&
+    !tab.url.startsWith('https://chromewebstore.google.com/')
   ) {
     const url = tab.url;
     const isUrlEnabled = await getUrlState(url);
