@@ -13,6 +13,17 @@ async function inject(tabId: number): Promise<void> {
       target: { tabId },
       files: ['disable.js'],
     });
+    await chrome.action.setIcon({
+      path: {
+        16: 'icons/on-16.png',
+        32: 'icons/on-32.png',
+      },
+      tabId: tabId,
+    });
+    await chrome.action.setTitle({
+      title: 'Page Visibility: ON',
+      tabId: tabId,
+    });
   } catch (error) {
     console.error('Failed to inject script:', error);
   }
@@ -141,7 +152,7 @@ chrome.runtime.onMessage.addListener(
 
     if (message.mode === 'toggle') {
       toggle(id, url).then(sendResponse);
-    } else {
+    } else if (message.mode === 'state') {
       getTabState(id).then(sendResponse);
     }
 
