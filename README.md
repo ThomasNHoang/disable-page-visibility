@@ -8,6 +8,7 @@
 - Blocks the `webkitvisibilitychange` event for broader browser compatibility.
 - **Selectively prevents** `blur` and `focus` events - blocks window-level events while preserving form functionality.
 - **Maintains website compatibility** - form inputs, comment submission, and interactive elements work normally.
+- **Enhanced React support** - handles dynamically loaded contenteditable elements and lazy-loaded components.
 - **Fixes issues** with sites like bilibili.com where comment submission was previously broken.
 - **New Popup Interface:** A dedicated popup for the extension allows you to easily enable or disable the functionality for the current website.
 - **Site-Specific Control:** The extension remembers your preference for each website, automatically applying your chosen setting when you revisit a site.
@@ -49,14 +50,15 @@ For more details, see the [full AGPL v3.0 license](https://www.gnu.org/licenses/
 
 ## How It Works
 
-The extension operates by injecting a content script (`disable.js`) into all compatible web pages. This script uses **selective event blocking** to maintain privacy while preserving website functionality:
+The extension operates by injecting a content script (`disable.js`) into all compatible web pages. This script uses **selective event blocking** with enhanced React support to maintain privacy while preserving website functionality:
 
 - **Always blocks** `visibilitychange` and `webkitvisibilitychange` events (pure tab switching detection)
 - **Selectively blocks** `blur` and `focus` events - only when they target the window/document, not form elements
 - **Preserves** focus/blur events on interactive elements like inputs, textareas, buttons, links, and contenteditable elements
-- **Maintains compatibility** with modern web applications using ARIA roles and focusable elements
+- **Enhanced React/SPA support** - uses MutationObserver to detect dynamically added interactive elements
+- **Smart detection** - recognizes React component patterns, ARIA roles, and data attributes commonly used in modern web apps
 
-This approach ensures that websites like bilibili.com can properly handle comment submission and form interactions while still preventing tab switching detection.
+This approach ensures that websites like bilibili.com and other React-based applications can properly handle comment submission and form interactions while still preventing tab switching detection, even when contenteditable elements are loaded dynamically through lazy loading.
 
 The extension manages two types of data storage:
 
