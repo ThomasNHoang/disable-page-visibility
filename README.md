@@ -4,9 +4,11 @@
 
 ## Features
 
-- Disables the `visibilitychange` event.
-- Blocks the `webkitvisibilitychange` event.
-- Prevents the `blur` and `focus` events from firing, making sure websites can't detect when the browser window loses focus.
+- Disables the `visibilitychange` event to prevent tab switching detection.
+- Blocks the `webkitvisibilitychange` event for broader browser compatibility.
+- **Selectively prevents** `blur` and `focus` events - blocks window-level events while preserving form functionality.
+- **Maintains website compatibility** - form inputs, comment submission, and interactive elements work normally.
+- **Fixes issues** with sites like bilibili.com where comment submission was previously broken.
 - **New Popup Interface:** A dedicated popup for the extension allows you to easily enable or disable the functionality for the current website.
 - **Site-Specific Control:** The extension remembers your preference for each website, automatically applying your chosen setting when you revisit a site.
 
@@ -47,17 +49,21 @@ For more details, see the [full AGPL v3.0 license](https://www.gnu.org/licenses/
 
 ## How It Works
 
-The extension operates by injecting a content script (`disable.js`) into all compatible web pages. This script works by:
+The extension operates by injecting a content script (`disable.js`) into all compatible web pages. This script uses **selective event blocking** to maintain privacy while preserving website functionality:
 
-- Listening for and stopping the immediate propagation of specific events related to page visibility and window focus.
-- The key events blocked are: `visibilitychange`, `webkitvisibilitychange`, `blur`, and `focus`.
+- **Always blocks** `visibilitychange` and `webkitvisibilitychange` events (pure tab switching detection)
+- **Selectively blocks** `blur` and `focus` events - only when they target the window/document, not form elements
+- **Preserves** focus/blur events on interactive elements like inputs, textareas, buttons, links, and contenteditable elements
+- **Maintains compatibility** with modern web applications using ARIA roles and focusable elements
+
+This approach ensures that websites like bilibili.com can properly handle comment submission and form interactions while still preventing tab switching detection.
 
 The extension manages two types of data storage:
 
 - **Temporary Tab State (`chrome.storage.session`):** For each open tab, the extension temporarily stores whether the `disable.js` script has been successfully injected and is active. This data is specific to the current browsing session and is automatically **cleared when the browser is closed or restarted**. This ensures a fresh state for all tabs upon a new session.
 - **Persistent Site Preferences (`chrome.storage.local`):** The extension also remembers your chosen "enabled" or "disabled" preference for specific websites. This data is stored persistently using `chrome.storage.local` and **survives browser restarts**. To optimize storage, a preference is only explicitly saved if you choose to _disable_ the extension for a particular site; the default behavior is always "enabled."
 
-By blocking these events using `event.stopImmediatePropagation()` during the capture phase, the extension effectively prevents websites from detecting when you switch tabs, minimize the browser window, or change focus.
+By using selective event blocking during the capture phase, the extension effectively prevents websites from detecting when you switch tabs while maintaining full UI functionality for legitimate web application features.
 
 ## Support
 
