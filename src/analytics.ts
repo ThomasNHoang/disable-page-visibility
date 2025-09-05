@@ -118,7 +118,12 @@ export async function logBlockedEvent({
 }) {
   if (!type) return;
   const today = getToday();
-  const hostname = new URL(url).hostname;
+  let hostname;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    return;
+  } 
 
   const data = await metrics.get();
   data.totalEventsBlocked++;
