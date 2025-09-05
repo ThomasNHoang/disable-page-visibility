@@ -3,14 +3,10 @@ import ChromeStorage, { websites } from "./chromeStorage";
 const reservedKeys = ["metrics", "version", "websites"] as const;
 type ReservedKeys = (typeof reservedKeys)[number];
 
-function isHostname(url: string) {
-  try {
-    new URL("http://" + url);
-    return true;
-  } catch {
-    return false;
-  }
-}
+function isValidHostname(hostname: string) {
+  const hostnameRegex = /^(?:(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|localhost|(?:\d{1,3}\.){3}\d{1,3}|\[?[A-Fa-f0-9:]+\]?)$/;
+  return hostnameRegex.test(hostname)
+};
 
 function isReservedKey(key: string): key is ReservedKeys {
   return (reservedKeys as readonly string[]).includes(key);
@@ -22,7 +18,6 @@ function isVersionLessThan(a: string | null, b: string): boolean {
 }
 
 const version = new ChromeStorage<string>("version", "0.0.0", "local");
-
 
 /**
  * Handles versioned, incremental migrations for extension storage.
@@ -49,7 +44,7 @@ export async function migrate() {
         // Migrate legacy hostnames to 'websites' key
         const keys = Object.keys(await chrome.storage.local.get());
         const hostnames = keys.filter(
-          (key) => !isReservedKey(key) && isHostname(key)
+          (key) => !isReservedKey(key) && isValidHostname(key)
         );
         const currentData = await websites.get();
         const previousData = await chrome.storage.local.get(hostnames);
@@ -58,7 +53,7 @@ export async function migrate() {
         if (hostnames.length > 0) {
           await chrome.storage.local.remove(hostnames);
         }
-      }
+      },
     },
     // Add future migrations here:
     // {
