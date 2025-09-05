@@ -19,14 +19,27 @@
 
 function preventEvent(event: Event) {
   event.stopImmediatePropagation();
+
+  // Send single event immediately to server-side queue
+  try {
+    chrome.runtime.sendMessage({
+      mode: "logEvent",
+      event: {
+        type: event.type,
+        url: window.location.href,
+      },
+    });
+  } catch {
+    // Silently ignore extension context errors
+  }
 }
 
 // List of events to block
 const eventsToBlock = [
-  'visibilitychange',
-  'webkitvisibilitychange',
-  'blur',
-  'focus',
+  "visibilitychange",
+  "webkitvisibilitychange",
+  "blur",
+  "focus",
 ];
 
 // Add event listeners for each event

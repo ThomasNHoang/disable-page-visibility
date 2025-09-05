@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Disable Page Visibility",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "Thomas Hoang",
   "description": "Stops websites from detecting when you switch tabs or minimize the window.",
   "icons": {
