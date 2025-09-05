@@ -1,3 +1,6 @@
+import { migrate } from './migration';
+import ChromeStorage, { websites } from './chromeStorage';
+
 type Message = {
   mode: 'toggle' | 'state';
   tab: {
@@ -86,35 +89,23 @@ async function deleteTabState(tabId: number): Promise<void> {
  */
 async function setUrlState(url: string, value: boolean): Promise<void> {
   const hostname = new URL(url).hostname;
-  if (value === false) {
-    try {
-      await chrome.storage.local.set({ [hostname]: false });
-    } catch (error) {
-      console.error(
-        `Failed to disable hostname ${hostname} in local storage:`,
-        error
-      );
-      throw error;
-    }
-  } else {
-    try {
-      await chrome.storage.local.remove(hostname); // Remove hostname from storage to indicate enabled state (saves storage space)
-    } catch (error) {
-      console.error(
-        `Failed to enable hostname ${hostname} in local storage:`,
-        error
-      );
-      throw error;
-    }
+  try {
+    const existingWebsites = await websites.get();
+    await websites.set({ ...existingWebsites, [hostname]: value });
+  } catch (error) {
+    console.error(
+      `Failed to set hostname ${hostname} to ${value} in local storage:`,
+      error
+    );
+    throw error;
   }
 }
 
 async function getUrlState(url: string): Promise<boolean> {
   const hostname = new URL(url).hostname;
   try {
-    const data = await chrome.storage.local.get(hostname);
-    // Returns true if hostname is not in storage (default enabled state), false if hostname exists in storage (disabled state)
-    return !(hostname in data);
+    const existingWebsites = await websites.get();
+    return existingWebsites[hostname] === true;
   } catch (error) {
     console.error(`Error getting data for hostname ${hostname}:`, error);
     throw error;
@@ -168,6 +159,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     !tab.url.startsWith('https://chromewebstore.google.com/')
   ) {
     const url = tab.url;
+    const hostname = new URL(url).hostname;
+    const currentData = await websites.get();
+    // Doesn't exist in storage
+    if (!(hostname in currentData)) {
+      await setUrlState(url, true);
+    }
+
     const isUrlEnabled = await getUrlState(url);
 
     if (isUrlEnabled) {
@@ -188,4 +186,8 @@ chrome.tabs.onReplaced.addListener(async (addedTabId, removedTabId) => {
   if (!wasOldTabEnabled) {
     await setTabState(addedTabId, false);
   }
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  migrate().catch((e) => console.error('Migration failed:', e));
 });
