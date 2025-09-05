@@ -34,7 +34,7 @@ export async function migrate() {
   if (dataVersion === manifestVersion) return;
 
   // Backup old data before migration
-  const backup = new ChromeStorage<{ [key: string]: any }>(
+  const backup = new ChromeStorage<{ [key: string]: unknown }>(
     `backup_${Date.now()}`,
     {},
     "session"

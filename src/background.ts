@@ -1,8 +1,8 @@
-import { migrate } from './migration';
-import ChromeStorage, { websites } from './chromeStorage';
+import { migrate } from "./migration";
+import ChromeStorage, { websites } from "./chromeStorage";
 
 type Message = {
-  mode: 'toggle' | 'state';
+  mode: "toggle" | "state";
   tab: {
     id?: number;
     url?: string;
@@ -14,21 +14,21 @@ async function inject(tabId: number): Promise<void> {
     await setTabState(tabId, true);
     await chrome.scripting.executeScript({
       target: { tabId },
-      files: ['disable.js'],
+      files: ["disable.js"],
     });
     await chrome.action.setIcon({
       path: {
-        16: 'icons/on-16.png',
-        32: 'icons/on-32.png',
+        16: "icons/on-16.png",
+        32: "icons/on-32.png",
       },
       tabId: tabId,
     });
     await chrome.action.setTitle({
-      title: 'Page Visibility: ON',
+      title: "Page Visibility: ON",
       tabId: tabId,
     });
   } catch (error) {
-    console.error('Failed to inject script:', error);
+    console.error("Failed to inject script:", error);
   }
 }
 
@@ -37,7 +37,7 @@ async function disable(tabId: number): Promise<void> {
     await setTabState(tabId, false);
     await chrome.tabs.reload(tabId);
   } catch (error) {
-    console.error('Failed to disable tab:', error);
+    console.error("Failed to disable tab:", error);
   }
 }
 
@@ -105,7 +105,12 @@ async function getUrlState(url: string): Promise<boolean> {
   const hostname = new URL(url).hostname;
   try {
     const existingWebsites = await websites.get();
-    return existingWebsites[hostname] === true;
+    if (hostname in existingWebsites) {
+      return existingWebsites[hostname];
+    } else {
+      await setUrlState(url, true);
+      return true;
+    }
   } catch (error) {
     console.error(`Error getting data for hostname ${hostname}:`, error);
     throw error;
@@ -137,13 +142,13 @@ chrome.runtime.onMessage.addListener(
       url = tab.url;
 
     if (!id || !url) {
-      console.error('Missing Url or Id:', tab);
+      console.error("Missing Url or Id:", tab);
       return;
     }
 
-    if (message.mode === 'toggle') {
+    if (message.mode === "toggle") {
       toggle(id, url).then(sendResponse);
-    } else if (message.mode === 'state') {
+    } else if (message.mode === "state") {
       getTabState(id).then(sendResponse);
     }
 
@@ -153,19 +158,12 @@ chrome.runtime.onMessage.addListener(
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (
-    changeInfo.status === 'complete' &&
+    changeInfo.status === "complete" &&
     tab.url &&
-    tab.url.startsWith('http') &&
-    !tab.url.startsWith('https://chromewebstore.google.com/')
+    tab.url.startsWith("http") &&
+    !tab.url.startsWith("https://chromewebstore.google.com/")
   ) {
     const url = tab.url;
-    const hostname = new URL(url).hostname;
-    const currentData = await websites.get();
-    // Doesn't exist in storage
-    if (!(hostname in currentData)) {
-      await setUrlState(url, true);
-    }
-
     const isUrlEnabled = await getUrlState(url);
 
     if (isUrlEnabled) {
@@ -189,5 +187,5 @@ chrome.tabs.onReplaced.addListener(async (addedTabId, removedTabId) => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  migrate().catch((e) => console.error('Migration failed:', e));
+  migrate().catch((e) => console.error("Migration failed:", e));
 });
