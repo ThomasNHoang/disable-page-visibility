@@ -1,13 +1,19 @@
 import { migrate } from "./migration";
 import ChromeStorage, { websites } from "./chromeStorage";
+import { queueEvent } from "./analytics";
 
-type Message = {
-  mode: "toggle" | "state";
-  tab: {
-    id?: number;
-    url?: string;
-  };
-};
+type Message =
+  | {
+      mode: "toggle" | "state";
+      tab: {
+        id?: number;
+        url?: string;
+      };
+    }
+  | {
+      mode: "logEvent";
+      event: { type: string; url: string };
+    };
 
 async function inject(tabId: number): Promise<void> {
   try {
@@ -80,9 +86,6 @@ async function deleteTabState(tabId: number): Promise<void> {
 /**
  * Sets the state of a specific url hostname (eg. www.google.com) in session storage.
  *
- * This function is optimized to save storage space by only storing the state
- * when it is `false`. The default, or assumed, state for any url is `true`.
- *
  * @param url The full URL from which the hostname will be extracted.
  * @param value The desired state for the hostname (`true` for enabled, `false` for disabled).
  * @returns A Promise that resolves once the storage operation is completed
@@ -137,22 +140,42 @@ async function toggle(tabId: number, url: string): Promise<boolean> {
 
 chrome.runtime.onMessage.addListener(
   (message: Message, sender, sendResponse) => {
-    const tab = message.tab;
-    const id = tab.id,
-      url = tab.url;
-
-    if (!id || !url) {
-      console.error("Missing Url or Id:", tab);
-      return;
+    if (message.mode === "logEvent") {
+      queueEvent(message.event);
+      return false;
     }
 
-    if (message.mode === "toggle") {
-      toggle(id, url).then(sendResponse);
-    } else if (message.mode === "state") {
-      getTabState(id).then(sendResponse);
+    if (message.mode === "toggle" || message.mode === "state") {
+      const tab = message.tab;
+      const id = tab?.id;
+      const url = tab?.url;
+      if (!id || !url) {
+        console.error("Missing Url or Id:", tab);
+        sendResponse(false);
+        return false;
+      }
+
+      if (message.mode === "toggle") {
+        toggle(id, url)
+          .then(sendResponse)
+          .catch((error) => {
+            console.error("Toggle error:", error);
+            sendResponse(false);
+          });
+      } else if (message.mode === "state") {
+        getTabState(id)
+          .then((state) => {
+            sendResponse(state);
+          })
+          .catch((error) => {
+            console.error("GetTabState error:", error);
+            sendResponse(false);
+          });
+      }
+      return true; // Keep the message channel open for async response
     }
 
-    return true;
+    return false;
   }
 );
 

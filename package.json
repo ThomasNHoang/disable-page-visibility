@@ -1,6 +1,6 @@
 {
   "name": "disable-page-visibility",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "**Disable Page Visibility** is a Chrome extension that prevents websites from detecting when you switch tabs or minimize the browser window. It stops the use of the `Page Visibility API`, ensuring that websites can't detect changes in the visibility of the browser tab.",
   "scripts": {
     "build": "webpack --config webpack.config.js"
