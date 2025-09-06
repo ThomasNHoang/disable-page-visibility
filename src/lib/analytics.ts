@@ -1,6 +1,6 @@
-import { BLOCKED_EVENT_TYPES, BlockedEventType } from "./constants";
+import { BlockedEventType } from './constants';
 
-export type StorageBlockedEventType = "visibilitychange" | "blur" | "focus";
+export type StorageBlockedEventType = 'visibilitychange' | 'blur' | 'focus';
 export type StorageBlockedEventTypeCount = {
   [K in StorageBlockedEventType]: number;
 };
@@ -26,7 +26,7 @@ export type QueuedEvent = {
 export function getToday(): string {
   const d = new Date();
   const year = d.getFullYear();
-  const month = (d.getMonth() + 1).toString().padStart(2, "0");
-  const day = d.getDate().toString().padStart(2, "0");
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 }

@@ -2,11 +2,11 @@ import {
   MESSAGE_MODES,
   POPUP_MESSAGES_HTML,
   POPUP_STATUS_CLASSES,
-} from "./constants";
+} from './constants';
 
 export async function getCurrentTab() {
-  let queryOptions = { active: true, lastFocusedWindow: true };
-  let [tab] = await chrome.tabs.query(queryOptions);
+  const queryOptions = { active: true, lastFocusedWindow: true };
+  const [tab] = await chrome.tabs.query(queryOptions);
   return tab;
 }
 
@@ -15,7 +15,7 @@ export async function sendMessage(
 ): Promise<boolean> {
   const tab = await getCurrentTab();
   if (!tab?.id || (!tab.url && !tab.pendingUrl)) {
-    console.error("sendMessage: Could not get a valid tab.");
+    console.error('sendMessage: Could not get a valid tab.');
     return false;
   }
 
@@ -33,7 +33,7 @@ export function updatePopupUI(
   statusTextElement: HTMLDivElement,
   isPageCompatible: boolean = true
 ) {
-  statusTextElement.className = "";
+  statusTextElement.className = '';
   statusTextElement.classList.add(POPUP_STATUS_CLASSES.VISIBLE);
 
   if (!isPageCompatible) {
