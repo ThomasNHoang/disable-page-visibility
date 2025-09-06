@@ -5,7 +5,11 @@ import {
   MAX_DAILY_ACTIVITY_RECORDS,
   QUEUE_PROCESSING_INTERVAL_MS,
 } from "./lib/constants";
-import { getToday, QueuedEvent } from "./lib/analytics";
+import {
+  getToday,
+  QueuedEvent,
+  StorageBlockedEventType,
+} from "./lib/analytics";
 import { metrics } from "./lib/storage";
 
 // Server-side queue for batching analytics
@@ -50,7 +54,7 @@ async function processQueue() {
     // Process deduplicated events
     for (const event of Object.values(deduplicatedEvents)) {
       await logBlockedEvent({
-        type: event.type as "visibilitychange" | "blur" | "focus",
+        type: event.type as StorageBlockedEventType,
         url: event.url,
       });
     }
@@ -75,7 +79,7 @@ export async function logBlockedEvent({
   type,
   url,
 }: {
-  type?: BlockedEventType;
+  type?: StorageBlockedEventType;
   url: string;
 }) {
   if (!type) return;
@@ -89,7 +93,7 @@ export async function logBlockedEvent({
 
   const data = await metrics.get();
   data.totalEventsBlocked++;
-  data.eventsByType[type as keyof typeof data.eventsByType]++;
+  data.eventsByType[type]++;
 
   if (!data.eventsByHostname[hostname]) {
     data.eventsByHostname[hostname] = {
@@ -101,9 +105,7 @@ export async function logBlockedEvent({
   }
 
   data.eventsByHostname[hostname].total++;
-  data.eventsByHostname[hostname][
-    type as keyof (typeof data.eventsByHostname)[typeof hostname]
-  ]++;
+  data.eventsByHostname[hostname][type]++;
   data.eventsByHostname[hostname].lastBlockedTime = new Date().toISOString();
   data.dailyActivity[today] = (data.dailyActivity[today] || 0) + 1;
 
