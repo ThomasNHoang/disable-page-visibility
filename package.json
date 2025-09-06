@@ -3,7 +3,9 @@
   "version": "1.2.3",
   "description": "**Disable Page Visibility** is a Chrome extension that prevents websites from detecting when you switch tabs or minimize the browser window. It stops the use of the `Page Visibility API`, ensuring that websites can't detect changes in the visibility of the browser tab.",
   "scripts": {
-    "build": "webpack --config webpack.config.js"
+    "lint": "eslint",
+    "build": "webpack --config webpack.config.js",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -24,14 +26,22 @@
   },
   "homepage": "https://github.com/ThomasNHoang/disable-page-visibility#readme",
   "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/chrome": "^0.1.1",
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
     "css-minimizer-webpack-plugin": "^7.0.2",
+    "eslint": "^9.35.0",
+    "globals": "^16.3.0",
     "html-webpack-plugin": "^5.6.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
     "mini-css-extract-plugin": "^2.9.3",
+    "prettier": "^3.6.2",
     "ts-loader": "^9.5.2",
     "typescript": "^5.9.2",
+    "typescript-eslint": "^8.42.0",
     "webpack": "^5.101.0",
     "webpack-cli": "^6.0.1"
   }
