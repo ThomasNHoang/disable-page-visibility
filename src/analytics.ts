@@ -1,52 +1,17 @@
-import ChromeStorage from "./chromeStorage";
-
-type BlockedEventType = "visibilitychange" | "blur" | "focus";
-type BlockedEventTypeCount = { [K in BlockedEventType]: number };
-
-interface Metrics {
-  totalEventsBlocked: number;
-  eventsByType: BlockedEventTypeCount;
-  eventsByHostname: {
-    [key: string]: {
-      total: number;
-      lastBlockedTime?: string;
-    } & BlockedEventTypeCount;
-  };
-  dailyActivity: { [key: string]: number };
-}
+import {
+  BLOCKED_EVENT_TYPES,
+  BlockedEventType,
+  DEDUPLICATION_TIME_WINDOW_MS,
+  MAX_DAILY_ACTIVITY_RECORDS,
+  QUEUE_PROCESSING_INTERVAL_MS,
+} from "./lib/constants";
+import { getToday, QueuedEvent } from "./lib/analytics";
+import { metrics } from "./lib/storage";
 
 // Server-side queue for batching analytics
-interface QueuedEvent {
-  type: string;
-  url: string;
-  timestamp: number;
-}
-
-const metrics = new ChromeStorage<Metrics>(
-  "metrics",
-  {
-    totalEventsBlocked: 0,
-    eventsByType: {
-      visibilitychange: 0,
-      blur: 0,
-      focus: 0,
-    },
-    eventsByHostname: {},
-    dailyActivity: {},
-  },
-  "local"
-);
 
 const eventQueue: QueuedEvent[] = [];
 let isProcessingQueue = false;
-
-function getToday(): string {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = (d.getMonth() + 1).toString().padStart(2, "0");
-  const day = d.getDate().toString().padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 async function processQueue() {
   if (isProcessingQueue || eventQueue.length === 0) return;
@@ -55,24 +20,21 @@ async function processQueue() {
   const eventsToProcess = eventQueue.splice(0, eventQueue.length);
 
   try {
-    const validTypes = [
-      "visibilitychange",
-      "webkitvisibilitychange",
-      "blur",
-      "focus",
-    ];
+    const validTypes = Object.values(BLOCKED_EVENT_TYPES);
 
     const deduplicatedEvents: { [key: string]: QueuedEvent } = {};
 
     for (const event of eventsToProcess) {
       if (event.url && event.type && validTypes.includes(event.type)) {
         const normalizedType =
-          event.type === "webkitvisibilitychange"
-            ? "visibilitychange"
+          event.type === BLOCKED_EVENT_TYPES.WEBKIT_VISIBILITY_CHANGE
+            ? BLOCKED_EVENT_TYPES.VISIBILITY_CHANGE
             : event.type;
 
-        if (normalizedType === "visibilitychange") {
-          const timeWindow = Math.floor(event.timestamp / 100) * 100;
+        if (normalizedType === BLOCKED_EVENT_TYPES.VISIBILITY_CHANGE) {
+          const timeWindow =
+            Math.floor(event.timestamp / DEDUPLICATION_TIME_WINDOW_MS) *
+            DEDUPLICATION_TIME_WINDOW_MS;
           const dedupeKey = `${event.url}:${normalizedType}:${timeWindow}`;
 
           if (!deduplicatedEvents[dedupeKey]) {
@@ -100,9 +62,9 @@ async function processQueue() {
 }
 
 // Process queue every 5 seconds
-setInterval(processQueue, 5000);
+setInterval(processQueue, QUEUE_PROCESSING_INTERVAL_MS);
 
-export function queueEvent(event: { type: string; url: string }) {
+export function queueEvent(event: { type: BlockedEventType; url: string }) {
   eventQueue.push({
     ...event,
     timestamp: Date.now(),
@@ -123,11 +85,11 @@ export async function logBlockedEvent({
     hostname = new URL(url).hostname;
   } catch {
     return;
-  } 
+  }
 
   const data = await metrics.get();
   data.totalEventsBlocked++;
-  data.eventsByType[type]++;
+  data.eventsByType[type as keyof typeof data.eventsByType]++;
 
   if (!data.eventsByHostname[hostname]) {
     data.eventsByHostname[hostname] = {
@@ -139,12 +101,14 @@ export async function logBlockedEvent({
   }
 
   data.eventsByHostname[hostname].total++;
-  data.eventsByHostname[hostname][type]++;
+  data.eventsByHostname[hostname][
+    type as keyof (typeof data.eventsByHostname)[typeof hostname]
+  ]++;
   data.eventsByHostname[hostname].lastBlockedTime = new Date().toISOString();
   data.dailyActivity[today] = (data.dailyActivity[today] || 0) + 1;
 
   const activityDates = Object.keys(data.dailyActivity).sort();
-  if (activityDates.length > 30) {
+  if (activityDates.length > MAX_DAILY_ACTIVITY_RECORDS) {
     const dateToDelete = activityDates[0];
     delete data.dailyActivity[dateToDelete];
   }

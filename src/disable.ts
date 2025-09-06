@@ -17,13 +17,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { BLOCKED_EVENT_TYPES, MESSAGE_MODES } from "./lib/constants";
+
 function preventEvent(event: Event) {
   event.stopImmediatePropagation();
 
   // Send single event immediately to server-side queue
   try {
     chrome.runtime.sendMessage({
-      mode: "logEvent",
+      mode: MESSAGE_MODES.LOG_EVENT,
       event: {
         type: event.type,
         url: window.location.href,
@@ -35,12 +37,7 @@ function preventEvent(event: Event) {
 }
 
 // List of events to block
-const eventsToBlock = [
-  "visibilitychange",
-  "webkitvisibilitychange",
-  "blur",
-  "focus",
-];
+const eventsToBlock = Object.values(BLOCKED_EVENT_TYPES);
 
 // Add event listeners for each event
 eventsToBlock.forEach((eventType) => {

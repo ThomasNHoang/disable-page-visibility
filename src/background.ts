@@ -1,151 +1,27 @@
-import { migrate } from "./migration";
-import ChromeStorage, { websites } from "./chromeStorage";
+import { migrate } from "./lib/migration";
 import { queueEvent } from "./analytics";
-
-type Message =
-  | {
-      mode: "toggle" | "state";
-      tab: {
-        id?: number;
-        url?: string;
-      };
-    }
-  | {
-      mode: "logEvent";
-      event: { type: string; url: string };
-    };
-
-async function inject(tabId: number): Promise<void> {
-  try {
-    await setTabState(tabId, true);
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ["disable.js"],
-    });
-    await chrome.action.setIcon({
-      path: {
-        16: "icons/on-16.png",
-        32: "icons/on-32.png",
-      },
-      tabId: tabId,
-    });
-    await chrome.action.setTitle({
-      title: "Page Visibility: ON",
-      tabId: tabId,
-    });
-  } catch (error) {
-    console.error("Failed to inject script:", error);
-  }
-}
-
-async function disable(tabId: number): Promise<void> {
-  try {
-    await setTabState(tabId, false);
-    await chrome.tabs.reload(tabId);
-  } catch (error) {
-    console.error("Failed to disable tab:", error);
-  }
-}
-
-async function setTabState(tabId: number, value: boolean): Promise<void> {
-  const id = tabId.toString();
-  try {
-    await chrome.storage.session.set({ [id]: value });
-  } catch (error) {
-    console.error(
-      `Failed to set state for tabId ${id} in session storage:`,
-      error
-    );
-  }
-}
-
-async function getTabState(tabId: number): Promise<boolean> {
-  const id = tabId.toString();
-  try {
-    const data = await chrome.storage.session.get(id);
-    if (id in data) {
-      return data[id];
-    } else {
-      return false;
-    }
-  } catch (error) {
-    console.error(`Error getting data for tab ${id}:`, error);
-    throw error;
-  }
-}
-
-async function deleteTabState(tabId: number): Promise<void> {
-  const id = tabId.toString();
-  try {
-    await chrome.storage.session.remove(id);
-  } catch (error) {
-    console.error(`Error deleting tab ${id} state:`, error);
-  }
-}
-
-/**
- * Sets the state of a specific url hostname (eg. www.google.com) in session storage.
- *
- * @param url The full URL from which the hostname will be extracted.
- * @param value The desired state for the hostname (`true` for enabled, `false` for disabled).
- * @returns A Promise that resolves once the storage operation is completed
- */
-async function setUrlState(url: string, value: boolean): Promise<void> {
-  const hostname = new URL(url).hostname;
-  try {
-    const existingWebsites = await websites.get();
-    await websites.set({ ...existingWebsites, [hostname]: value });
-  } catch (error) {
-    console.error(
-      `Failed to set hostname ${hostname} to ${value} in local storage:`,
-      error
-    );
-    throw error;
-  }
-}
-
-async function getUrlState(url: string): Promise<boolean> {
-  const hostname = new URL(url).hostname;
-  try {
-    const existingWebsites = await websites.get();
-    if (hostname in existingWebsites) {
-      return existingWebsites[hostname];
-    } else {
-      await setUrlState(url, true);
-      return true;
-    }
-  } catch (error) {
-    console.error(`Error getting data for hostname ${hostname}:`, error);
-    throw error;
-  }
-}
-
-async function toggle(tabId: number, url: string): Promise<boolean> {
-  const isTabEnabled = await getTabState(tabId);
-  const newTabState = !isTabEnabled;
-
-  if (newTabState) {
-    await inject(tabId);
-  } else {
-    await disable(tabId);
-  }
-
-  const isUrlEnabled = await getUrlState(url);
-  if (newTabState !== isUrlEnabled) {
-    await setUrlState(url, newTabState);
-  }
-
-  return newTabState;
-}
+import {
+  deleteTabState,
+  getTabState,
+  getUrlState,
+  inject,
+  Message,
+  setTabState,
+  toggle,
+} from "./lib/background";
+import { EXCLUDED_URLS, MESSAGE_MODES } from "./lib/constants";
 
 chrome.runtime.onMessage.addListener(
   (message: Message, sender, sendResponse) => {
-    if (message.mode === "logEvent") {
+    if (message.mode === MESSAGE_MODES.LOG_EVENT) {
       queueEvent(message.event);
       return false;
     }
 
-    if (message.mode === "toggle" || message.mode === "state") {
+    if (
+      message.mode === MESSAGE_MODES.TOGGLE ||
+      message.mode === MESSAGE_MODES.GET_STATE
+    ) {
       const tab = message.tab;
       const id = tab?.id;
       const url = tab?.url;
@@ -155,14 +31,14 @@ chrome.runtime.onMessage.addListener(
         return false;
       }
 
-      if (message.mode === "toggle") {
+      if (message.mode === MESSAGE_MODES.TOGGLE) {
         toggle(id, url)
           .then(sendResponse)
           .catch((error) => {
             console.error("Toggle error:", error);
             sendResponse(false);
           });
-      } else if (message.mode === "state") {
+      } else if (message.mode === MESSAGE_MODES.GET_STATE) {
         getTabState(id)
           .then((state) => {
             sendResponse(state);
@@ -184,7 +60,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     changeInfo.status === "complete" &&
     tab.url &&
     tab.url.startsWith("http") &&
-    !tab.url.startsWith("https://chromewebstore.google.com/")
+    !tab.url.startsWith(EXCLUDED_URLS.CHROME_WEBSTORE)
   ) {
     const url = tab.url;
     const isUrlEnabled = await getUrlState(url);
