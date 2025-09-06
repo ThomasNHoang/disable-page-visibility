@@ -3,23 +3,23 @@ export type StorageType = "session" | "local" | "sync";
 export default class ChromeStorage<T> {
   private key: string;
   private fallback: T;
+  private storageType: StorageType;
   private storageArea: chrome.storage.StorageArea;
   private listeners: Set<(newValue: T | null) => void>;
-  private storageListener: (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => void;
-  private areaName: string;
+  private storageListener: (
+    changes: { [key: string]: chrome.storage.StorageChange },
+    areaName: string
+  ) => void;
 
-  constructor(key: string, fallback: T, storageType: StorageType = "session") {
+  constructor(key: string, fallback: T, storageType: StorageType = "local") {
     this.key = key;
     this.fallback = fallback;
     this.listeners = new Set();
+    this.storageType = storageType;
     this.storageArea = this.getStorageArea(storageType);
-    this.areaName = this.getChromeStorageAreaName(storageType);
 
     this.storageListener = (changes, areaName) => {
-      if (
-        areaName === this.areaName &&
-        changes[this.key]
-      ) {
+      if (areaName === this.storageType && changes[this.key]) {
         const newValue = changes[this.key]?.newValue as T | null;
         this.notify(newValue);
       }
@@ -30,25 +30,13 @@ export default class ChromeStorage<T> {
 
   private getStorageArea(storageType: StorageType): chrome.storage.StorageArea {
     switch (storageType) {
-      case "local":
-        return chrome.storage.local;
       case "sync":
         return chrome.storage.sync;
       case "session":
-      default:
         return chrome.storage.session;
-    }
-  }
-
-  private getChromeStorageAreaName(storageType: StorageType): string {
-    switch (storageType) {
       case "local":
-        return "local";
-      case "sync":
-        return "sync";
-      case "session":
       default:
-        return "session";
+        return chrome.storage.local;
     }
   }
 
@@ -91,9 +79,3 @@ export default class ChromeStorage<T> {
     this.listeners.clear();
   }
 }
-
-export const websites = new ChromeStorage<{ [hostname: string]: boolean }>(
-  "websites",
-  {},
-  "local"
-);

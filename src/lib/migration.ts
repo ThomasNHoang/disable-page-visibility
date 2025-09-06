@@ -1,23 +1,28 @@
-import ChromeStorage, { websites } from "./chromeStorage";
+import {
+  MIGRATION_BACKUP_PREFIX,
+  RESERVED_STORAGE_KEYS,
+  ReservedStorageKeys,
+} from "./constants";
+import ChromeStorage from "./chromeStorage";
+import { version, websites } from "./storage";
 
-const reservedKeys = ["metrics", "version", "websites"] as const;
-type ReservedKeys = (typeof reservedKeys)[number];
+const hostnameRegex =
+  /^(?:(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|localhost|(?:\d{1,3}\.){3}\d{1,3}|\[?[A-Fa-f0-9:]+\]?)$/;
 
 function isValidHostname(hostname: string) {
-  const hostnameRegex = /^(?:(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|localhost|(?:\d{1,3}\.){3}\d{1,3}|\[?[A-Fa-f0-9:]+\]?)$/;
-  return hostnameRegex.test(hostname)
-};
+  return hostnameRegex.test(hostname);
+}
 
-function isReservedKey(key: string): key is ReservedKeys {
-  return (reservedKeys as readonly string[]).includes(key);
+function isReservedKey(key: string) {
+  return Object.values(RESERVED_STORAGE_KEYS).includes(
+    key as ReservedStorageKeys
+  );
 }
 
 function isVersionLessThan(a: string | null, b: string): boolean {
   if (!a) return true; // null/undefined version is considered less than any version
   return a.localeCompare(b, undefined, { numeric: true }) < 0;
 }
-
-const version = new ChromeStorage<string>("version", "0.0.0", "local");
 
 /**
  * Handles versioned, incremental migrations for extension storage.
@@ -30,7 +35,7 @@ export async function migrate() {
 
   // Backup old data before migration
   const backup = new ChromeStorage<{ [key: string]: unknown }>(
-    `backup_${Date.now()}`,
+    `${MIGRATION_BACKUP_PREFIX}${Date.now()}`,
     {},
     "session"
   );
