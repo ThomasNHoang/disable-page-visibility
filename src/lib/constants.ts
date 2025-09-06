@@ -10,7 +10,8 @@ export const RESERVED_STORAGE_KEYS = {
   VERSION: "version",
 } as const;
 
-export type ReservedStorageKeys = typeof RESERVED_STORAGE_KEYS[keyof typeof RESERVED_STORAGE_KEYS]
+export type ReservedStorageKeys =
+  (typeof RESERVED_STORAGE_KEYS)[keyof typeof RESERVED_STORAGE_KEYS];
 
 /**
  * -----------------------------------------------------------------------------
@@ -26,7 +27,8 @@ export const BLOCKED_EVENT_TYPES = {
   FOCUS: "focus",
 } as const;
 
-export type BlockedEventType = typeof BLOCKED_EVENT_TYPES[keyof typeof BLOCKED_EVENT_TYPES];
+export type BlockedEventType =
+  (typeof BLOCKED_EVENT_TYPES)[keyof typeof BLOCKED_EVENT_TYPES];
 
 /**
  * -----------------------------------------------------------------------------
