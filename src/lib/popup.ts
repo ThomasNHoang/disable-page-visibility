@@ -38,12 +38,6 @@ export function updatePopupUI(
 
   if (!isPageCompatible) {
     statusTextElement.innerHTML = POPUP_MESSAGES_HTML.UNAVAILABLE;
-    statusTextElement.classList.add("status-card", "status-unavailable");
-    return;
-  }
-
-  if (!isPageCompatible) {
-    statusTextElement.innerHTML = POPUP_MESSAGES_HTML.UNAVAILABLE;
     statusTextElement.classList.add(
       POPUP_STATUS_CLASSES.CARD,
       POPUP_STATUS_CLASSES.UNAVAILABLE
