@@ -1,14 +1,14 @@
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import CopyPlugin from 'copy-webpack-plugin';
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export default{
+export default {
   mode: 'production',
   entry: {
     disable: path.resolve(__dirname, 'src', 'disable.ts'),
